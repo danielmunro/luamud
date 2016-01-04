@@ -1,0 +1,44 @@
+---
+temple_gates:
+  id: temple_gates
+  name: Temple gates
+  description: Foo
+  mobs: {}
+  directions:
+    south: town_center
+commons:
+  id: commons
+  name: A new room
+  description: A new room has popped into existence from the void. It is up to you
+    to customize it.
+  mobs: {}
+  directions:
+    north: town_center
+town_center:
+  id: town_center
+  name: Town center
+  description: Foo
+  mobs:
+  - maxattr:
+      mv: 100
+      mana: 100
+      hp: 20
+    isnpc: false
+    name: Foo
+    attr:
+      mv: 100
+      mana: 100
+      hp: 20
+    race:
+      name: human
+      attr:
+        int: 15
+        str: 15
+        cha: 15
+        wis: 15
+        con: 15
+        dex: 15
+  directions:
+    north: temple_gates
+    south: commons
+...

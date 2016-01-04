@@ -1,21 +1,25 @@
 local socket = require "socket"
-local persistence = require "persistence"
 local room = require "room"
+local loader = require "loader"
 
-function nexttick()
+local function nexttick()
   return os.time() + math.random(10, 15)
 end
 
 local game = {
-  server = assert(socket.bind("*", 0)),
+  server = nil,
   pulse = os.time(),
   tick = os.time(),
   nexttick = nexttick()
 }
-local ip, port = game.server:getsockname()
-game.server:settimeout(0)
 
-print("Please telnet to localhost on port " .. port)
+function game:start()
+  game.server = assert(socket.bind("127.0.0.1", 55439))
+  game.server:settimeout(0)
+  local ip, port = game.server:getsockname()
+  loader.load()
+  print("Please telnet to localhost on port " .. port)
+end
 
 function game:newclient()
   local client = self.server:accept()
@@ -37,10 +41,6 @@ function game:loop(players)
   if time > self.nexttick then
     self.tick = time
     self.nexttick = nexttick()
-
-    print("saving to storage")
-
-    persistence.store("storage.lua", room.root)
 
     for i, v in pairs(players) do
       prompt(v)

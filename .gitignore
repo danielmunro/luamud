@@ -1,6 +1,3 @@
-# Saved game files
-storage.lua
-
 # Compiled Lua sources
 luac.out
 
