@@ -1,6 +1,4 @@
-local race = {}
-
-local races = {
+local race = {
   human = {
     name = "human",
     attr = { str = 15, int = 15, wis = 15, dex = 15, con = 15, cha = 15 }
@@ -16,11 +14,11 @@ local races = {
   giant = {
     name = "giant",
     attr = { str = 18, int = 12, wis = 13, dex = 13, con = 18, cha = 12 }
+  },
+  critter = {
+    name = "critter",
+    attr = { str = 15, int = 15, wis = 15, dex = 15, con = 15, cha = 15 }
   }
 }
-
-function race.new(racetype)
-  if races[racetype] then return races[racetype] end
-end
 
 return race

@@ -1,23 +1,29 @@
 local socket = require "socket"
 local room = require "room"
-local loader = require "loader"
 
 local function nexttick()
   return os.time() + math.random(10, 15)
 end
 
+local function regen(mob, stat, regen)
+  mob.attr[stat] = mob.attr[stat] + (mob.maxattr[stat] * regen)
+  if mob.attr[stat] > mob.maxattr[stat] then
+    mob.attr[stat] = mob.maxattr[stat]
+  end
+end
+
 local game = {
-  server = nil,
   pulse = os.time(),
   tick = os.time(),
   nexttick = nexttick()
+  hour = 1
 }
 
 function game:start()
   game.server = assert(socket.bind("127.0.0.1", 55439))
   game.server:settimeout(0)
   local ip, port = game.server:getsockname()
-  loader.load()
+  room:load()
   print("Please telnet to localhost on port " .. port)
 end
 
@@ -42,8 +48,12 @@ function game:loop(players)
     self.tick = time
     self.nexttick = nexttick()
 
-    for i, v in pairs(players) do
-      prompt(v)
+    for i, p in pairs(players) do
+      local rate = p.room.regen or .1
+      regen(p.mob, "hp", rate)
+      regen(p.mob, "mana", rate)
+      regen(p.mob, "mv", rate)
+      prompt(p)
     end
   end
 end

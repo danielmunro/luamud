@@ -1,44 +1,90 @@
 ---
-temple_gates:
-  id: temple_gates
-  name: Temple gates
-  description: Foo
-  mobs: {}
-  directions:
-    south: town_center
-commons:
-  id: commons
-  name: A new room
+- id: 1
+  name: Poor Alley
   description: A new room has popped into existence from the void. It is up to you
     to customize it.
   mobs: {}
   directions:
-    north: town_center
-town_center:
-  id: town_center
-  name: Town center
-  description: Foo
+    east: 2
+- id: 2
+  name: The Common Square
+  description: A new room has popped into existence from the void. It is up to you
+    to customize it.
+  mobs: {}
+  directions:
+    west: 1
+    east: 3
+    north: 4
+- id: 3
+  name: Poor Alley
+  description: A new room has popped into existence from the void. It is up to you
+    to customize it.
+  mobs: {}
+  directions:
+    west: 2
+- id: 4
+  name: The Market Square
+  description: A new room has popped into existence from the void. It is up to you
+    to customize it.
+  mobs: {}
+  directions:
+    south: 2
+    west: 7
+    east: 8
+    north: 5
+- id: 5
+  name: The Temple Gates
+  description: A new room has popped into existence from the void. It is up to you
+    to customize it.
   mobs:
-  - maxattr:
-      mv: 100
-      mana: 100
-      hp: 20
-    isnpc: false
+  - isnpc: false
+    race: human
     name: Foo
     attr:
       mv: 100
       mana: 100
       hp: 20
-    race:
-      name: human
-      attr:
-        int: 15
-        str: 15
-        cha: 15
-        wis: 15
-        con: 15
-        dex: 15
+    level: 1
+    maxattr:
+      mv: 100
+      mana: 100
+      hp: 20
+  - isnpc: true
+    race: giant
+    name: Hassan
+    brief: Hassan stands before you, waiting to dispense justice.
+    attr:
+      mv: 100
+      mana: 100
+      hp: 20
+    level: 1
+    maxattr:
+      mv: 100
+      mana: 100
+      hp: 20
   directions:
-    north: temple_gates
-    south: commons
+    south: 4
+    north: 6
+- id: 6
+  name: The Temple Altar
+  description: A new room has popped into existence from the void. It is up to you
+    to customize it.
+  mobs: {}
+  regen: .25
+  directions:
+    south: 5
+- id: 7
+  name: Main Street
+  description: A new room has popped into existence from the void. It is up to you
+    to customize it.
+  mobs: {}
+  directions:
+    east: 4
+- id: 8
+  name: Main Street
+  description: A new room has popped into existence from the void. It is up to you
+    to customize it.
+  mobs: {}
+  directions:
+    west: 4
 ...

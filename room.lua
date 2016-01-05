@@ -1,12 +1,13 @@
 local mob = require "mob"
+local lyaml = require "lyaml"
 
 local room = {
-  rooms = nil
+  rooms = {}
 }
 
 function room:new()
   local newroom = {
-    id = "",
+    id = #self.rooms+1,
     name = "",
     description = "",
     directions = {},
@@ -28,6 +29,27 @@ function room:removemob(mob)
     if v == mob then
       table.remove(self.mobs, i)
       break
+    end
+  end
+end
+
+function room:load()
+  local f = io.open("realm/midgaard.yaml", "rb")
+  local content = f:read("*all")
+  f:close()
+  self.rooms = lyaml.load(content)
+
+  for i, r in pairs(self.rooms) do
+    setmetatable(r, self)
+    self.__index = self
+
+    for j, m in pairs(r.mobs) do
+      if m.isnpc then
+        setmetatable(m, mob)
+        mob.__index = mob
+      else
+        table.remove(r.mobs, j)
+      end
     end
   end
 end

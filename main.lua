@@ -2,7 +2,6 @@ local game = require "game"
 local command = require "command"
 local room = require "room"
 local mob = require "mob"
-local loader = require "loader"
 local players = {}
 
 local function split(input)
@@ -52,7 +51,7 @@ function broadcastroom(id, sender, message)
 end
 
 function prompt(player)
-  player.client:send("\n--> ")
+  player.client:send("\n" .. player.mob:getattr("hp") .. "hp " .. player.mob:getattr("mana") .. "mana " .. player.mob:getattr("mv") .. "mv> ")
 end
 
 game:start()
@@ -62,13 +61,12 @@ while 1 do
     game:loop(players)
 
     local newclient = game:newclient()
-    local rooms = loader.getrooms()
 
     if newclient then
       local player = {
         client = newclient,
-        room = rooms["town_center"],
-        mob = mob.new("Foo", "human")
+        room = room.rooms[1],
+        mob = mob:new("Foo", "human")
       }
       player.mob.isnpc = false
       player.room:addmob(player.mob)
