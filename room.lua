@@ -11,7 +11,8 @@ function room:new()
     name = "",
     description = "",
     directions = {},
-    mobs = {}
+    mobs = {},
+    items = {}
   }
 
   setmetatable(newroom, self)

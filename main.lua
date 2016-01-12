@@ -1,8 +1,6 @@
 local game = require "game"
 local command = require "command"
 local room = require "room"
-local mob = require "mob"
-local players = {}
 
 local function split(input)
   local result = {}
@@ -37,15 +35,15 @@ local function findcommand(input)
 end
 
 function broadcast(message)
-  for i, p in ipairs(players) do
-    p.client:send(message)
+  for i, p in pairs(game.players) do
+    p:send(message)
   end
 end
 
-function broadcastroom(id, sender, message)
-  for i, p in ipairs(players) do
-    if p.room.id == id and p ~= sender then
-      p.client:send(message)
+function broadcastroom(playersender, message)
+  for i, p in pairs(game.players) do
+    if p.room.id == id and p ~= playersender then
+      p:send(message)
     end
   end
 end
@@ -58,27 +56,12 @@ game:start()
 
 while 1 do
 
-    game:loop(players)
+    game:loop()
 
-    local newclient = game:newclient()
-
-    if newclient then
-      local player = {
-        client = newclient,
-        room = room.rooms[1],
-        mob = mob:new("Foo", "human")
-      }
-      player.mob.isnpc = false
-      player.room:addmob(player.mob)
-      table.insert(players, player)
-      command.look(player)
-      prompt(player)
-    end
-
-    for i, p in ipairs(players) do
+    for i, p in pairs(game.players) do
       local input, err = p.client:receive()
 
-      if err == "closed" then table.remove(players, i)
+      if err == "closed" then table.remove(game.players, i)
       elseif input then
         local args = split(input)
         local playeraction = findcommand(args[1])
@@ -86,7 +69,7 @@ while 1 do
         if playeraction then
           playeraction(p, args)
         else
-          p.client:send("What?\n")
+          p:send("What?")
         end
 
         prompt(p)

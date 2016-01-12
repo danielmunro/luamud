@@ -53,6 +53,7 @@
     race: giant
     name: Hassan
     brief: Hassan stands before you, waiting to dispense justice.
+    trainer: true
     attr:
       mv: 100
       mana: 100

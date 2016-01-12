@@ -1,5 +1,7 @@
 local socket = require "socket"
 local room = require "room"
+local mob = require "mob"
+local command = require "command"
 
 local function nexttick()
   return os.time() + math.random(10, 15)
@@ -15,9 +17,16 @@ end
 local game = {
   pulse = os.time(),
   tick = os.time(),
-  nexttick = nexttick()
+  nexttick = nexttick(),
+  players = {},
   hour = 1
 }
+
+local playermt = {}
+
+function playermt:send(message)
+  self.client:send(message .. "\n")
+end
 
 function game:start()
   game.server = assert(socket.bind("127.0.0.1", 55439))
@@ -27,17 +36,33 @@ function game:start()
   print("Please telnet to localhost on port " .. port)
 end
 
-function game:newclient()
+function game:checknewclient()
   local client = self.server:accept()
 
   if client then
     client:settimeout(0)
 
-    return client
+    local player = {
+      client = client,
+      room = room.rooms[1],
+      mob = mob:new("Foo", "giant")
+    }
+
+    setmetatable(player, playermt)
+    playermt.__index = playermt
+
+    player.mob.isnpc = false
+    player.room:addmob(player.mob)
+    command.look(player)
+    prompt(player)
+    table.insert(self.players, player)
   end
 end
 
-function game:loop(players)
+function game:loop()
+
+  self:checknewclient()
+
   local time = os.time()
 
   if time > self.pulse then
@@ -48,7 +73,7 @@ function game:loop(players)
     self.tick = time
     self.nexttick = nexttick()
 
-    for i, p in pairs(players) do
+    for i, p in pairs(self.players) do
       local rate = p.room.regen or .1
       regen(p.mob, "hp", rate)
       regen(p.mob, "mana", rate)
