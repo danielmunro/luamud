@@ -2,10 +2,144 @@ local attributes = require "attributes"
 local race = require "race"
 local skill = require "skill"
 local class = require "class"
-local mob = {}
+local mob = {
+  mobs = {}
+}
+
+local position = {
+  DEAD = 0,
+  MORTAL = 1,
+  INCAP = 2,
+  STUNNED = 3,
+  SLEEPING = 4,
+  RESTING = 5,
+  SITTING = 6,
+  FIGHTING = 7,
+  STANDING = 8
+}
+
+local act = {
+  IS_NPC = "A",
+  SENTINEL = "B",
+  SCAVENGER = "C",
+  AGGRESSIVE = "F",
+  STAY_AREA = "G",
+  WIMPY = "H",
+  PET = "I",
+  TRAIN = "J",
+  PRACTICE = "K",
+  UNDEAD = "O",
+  IS_WEAPONSMITH = "P",
+  CLERIC = "Q",
+  MAGE = "R",
+  THIEF = "S",
+  WARRIOR = "T",
+  NOALIGN = "U",
+  NOPURGE = "V",
+  OUTDOORS = "W",
+  IS_ARMOURER = "X",
+  INDOORS = "Y",
+  MOUNT = "Z",
+  IS_HEALER = "aa",
+  GAIN = "bb",
+  UPDATE_ALWAYS = "cc",
+  IS_CHANGER = "dd",
+  NOTRANS = "ee"
+}
 
 local function rawgain(primary, secondary)
   return (primary * 2/3) + (secondary * 1/4)
+end
+
+local function trim(s)
+  return (s:gsub("^%s*(.-)%s*$", "%1"))
+end
+
+function mob:load(loader)
+  local lastmob = 1
+  while true do
+    local m = self:new()
+    local line = loader:nextbuf()
+    local id = tonumber(string.sub(line, 2))
+    if id == 0 then return end
+    m.id = id
+    m.name = loader:string()
+    m.shortdesc = loader:string()
+    m.longdesc = trim(loader:string())
+    m.description = loader:string()
+    m.race = loader:string()
+    while string.sub(loader:peekbuf(), -1) == "~" do
+      loader:nextbuf() -- spec_words
+    end
+    m.act = loader:nextval()
+    m.affectedby = loader:nextval()
+    m.alignment = loader:nextnum()
+    m.group = loader:nextval()
+    m.level = loader:nextnum()
+    m.hitroll = loader:nextnum()
+    m.hit = {}
+    m.hit["number"] = loader:nextnum()
+    loader:character()
+    m.hit["type"] = loader:nextnum()
+    loader:character()
+    m.hit["bonus"] = loader:nextnum()
+
+    m.mana = {}
+    m.mana["number"] = loader:nextnum()
+    loader:character()
+    m.mana["type"] = loader:nextnum()
+    loader:character()
+    m.mana["bonus"] = loader:nextnum()
+
+    -- read damage dice
+    m.damage = {}
+    m.damage["number"] = loader:nextnum()
+    loader:character()
+    m.damage["type"] = loader:nextnum()
+    loader:character()
+    m.damage["bonus"] = loader:nextnum()
+    m.damtype = loader:nextval()
+
+    -- read armor class
+    m.ac = {
+      pierce = loader:nextnum(),
+      bash = loader:nextnum(),
+      slash = loader:nextnum(),
+      exotic = loader:nextnum()
+    }
+
+    -- read flags and add in data from race table
+    m.offflags = loader:nextval()
+    m.immflags = loader:nextval()
+    m.resflags = loader:nextval()
+    m.vulnflags = loader:nextval()
+
+    -- vital statistics
+    m.startpos = loader:nextval()
+    m.defaultpos = loader:nextval()
+    m.position = m.defaultpos
+    m.sex = loader:nextval()
+    m.wealth = loader:nextval()
+    m.form = loader:nextval()
+    m.parts = loader:nextval()
+    m.size = loader:nextval()
+    m.material = loader:nextval()
+
+    while loader:peekbuf(loader.cursor) == "F" do
+      loader:nextbuf()
+    end
+
+    if id == nil then
+      print("No id")
+      print("------- LAST MOB -------")
+      require "pl.pretty".dump(lastmob)
+      print("------- CURRENT MOB -------")
+      require "pl.pretty".dump(m)
+      os.exit()
+    end
+    self.mobs[id] = m
+    lastmob = m
+  end
 end
 
 function mob:getattr(attrname)
@@ -28,6 +162,13 @@ function mob:getattr(attrname)
   end
 end
 
+function mob:baseattr(attrname)
+  local rattr = race.races[self.race]["attr"][attrname] or 0;
+  local attr = self.attr[attrname] or 0 + rattr
+
+  return attr
+end
+
 function mob:new(name, racetype, classtype)
 
   if racetype == nil then
@@ -37,21 +178,23 @@ function mob:new(name, racetype, classtype)
   local tolevel = race:tolevel(racetype)
   local m = {
     name = name,
+    shortdesc = "",
+    longdesc = "",
+    description = "",
+    specwords = {},
     isnpc = true,
     race = racetype,
+    roomid = 0,
     level = 1,
     trains = 1,
     practices = 5,
-    trainer = false,
+    position = position.STANDING,
+    act = {},
     xp = {
       total = tolevel,
       tolevel = tolevel,
       tnl = tolevel
     },
-    skills = {},
-    spells = {},
-    items = {},
-    class = classtype,
     attr = {
       hp = 20,
       mana = 100,
@@ -70,6 +213,10 @@ function mob:new(name, racetype, classtype)
   self.__index = self
 
   return m
+end
+
+function mob:setroomid(roomid)
+  self.roomid = roomid
 end
 
 function mob:levelup()

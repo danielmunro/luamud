@@ -42,14 +42,14 @@ end
 
 function broadcastroom(playersender, message)
   for i, p in pairs(game.players) do
-    if p.room.id == id and p ~= playersender then
+    if p.roomid == id and p ~= playersender then
       p:send(message)
     end
   end
 end
 
 function prompt(player)
-  player.client:send("\n" .. player.mob:getattr("hp") .. "hp " .. player.mob:getattr("mana") .. "mana " .. player.mob:getattr("mv") .. "mv> ")
+  player.client:send("\n" .. player.mob.attr["hp"] .. "hp " .. player.mob.attr["mana"] .. "mana " .. player.mob.attr["mv"] .. "mv> ")
 end
 
 game:start()
@@ -61,7 +61,8 @@ while 1 do
     for i, p in pairs(game.players) do
       local input, err = p.client:receive()
 
-      if err == "closed" then table.remove(game.players, i)
+      if err == "closed" then
+        table.remove(game.players, i)
       elseif input then
         local args = split(input)
         local playeraction = findcommand(args[1])
