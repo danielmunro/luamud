@@ -1,6 +1,7 @@
 local room = require "room"
-local persister = require "persister"
 local mob = require "mob"
+local location = require "location"
+local area = require "area"
 
 local command = {
   priority = {
@@ -9,20 +10,18 @@ local command = {
 }
 
 local function move(player, direction)
-  local roomfrom = room.rooms[player.roomid]
-  local roomto = room.rooms[roomfrom.directions[direction]]
+  local roomfrom = room.list[location.mobs[player.mob.id]]
+  local roomto = room.list[roomfrom.directions[direction]]
 
   if roomto then
 
     local mvcost = roomto.mvcost or 1
-    if player.mob.attr.mv >= mvcost then
-      player.mob.attr.mv = player.mob.attr.mv - mvcost
-      player.mob.roomid = roomto.id
-      roomfrom:removemob(player.mob)
+    if player.mob.mv >= mvcost then
+      player.mob.mv = player.mob.mv - mvcost
       broadcastroom(player, player.mob.name .. " leaves heading " .. direction .. ".")
-      player.roomid = roomto.id
+      location:removemob(player.mob.id)
+      location:addmob(player.mob.id, roomto.id)
       broadcastroom(player, player.mob.name .. " arrives from the " .. room.oppositedir(direction) .. ".")
-      roomto:addmob(player.mob)
       command.look(player)
     else
       player:send("You are too tired to move.")
@@ -52,7 +51,8 @@ function command.gossip(player, args)
 end
 
 function command.look(player, args)
-  local r = room.rooms[player.roomid]
+  local l = location.mobs[player.mob.id]
+  local r = room.list[l]
   if args and args[2] ~= nil then
     for i, m in pairs(r.mobs) do
       for word in m.name:gmatch("%w+") do
@@ -69,12 +69,13 @@ function command.look(player, args)
     end
 
     local mobs = {}
-    for i, v in pairs(r.mobs) do
-      if v ~= player.mob then
-        if v.longdesc then
-          table.insert(mobs, v.longdesc)
+    for i, v in pairs(location.rooms[l]) do
+      if v ~= player.mob.id then
+        local m = mob.list[v]
+        if m.longdesc then
+          table.insert(mobs, "\n" .. m.longdesc)
         else
-          table.insert(mobs, v.name .. " is here.\n")
+          table.insert(mobs, "\n" .. m.name .. " is here.")
         end
       end
     end
@@ -82,7 +83,7 @@ function command.look(player, args)
     player:send(
       r.name .. "\n" ..
       r.description .. "\n\n" ..
-      "Exits [" .. table.concat(directions) .. "]\n" ..
+      "Exits [" .. table.concat(directions) .. "]" ..
       table.concat(mobs)
     )
   end
@@ -91,9 +92,9 @@ end
 function command.score(player)
   local m = player.mob
   player:send("You are " .. m.name .. ", a level " .. m.level .. " " .. m.race .. ".\n" ..
-  m.attr["hp"] .. "/" .. m.maxattr["hp"] .. "hp, " ..
-  m.attr["mana"] .. "/" .. m.maxattr["mana"] .. "mana, " ..
-  m.attr["mv"] .. "/" .. m.maxattr["mv"] .. "mv\n" ..
+  m.hp .. "/" .. m.attr["hp"] .. "hp, " ..
+  m.mana .. "/" .. m.attr["mana"] .. "mana, " ..
+  m.mv .. "/" .. m.attr["mv"] .. "mv\n" ..
   m:baseattr("str") .. "(" .. m:getattr("str") .. ") str, " ..
   m:baseattr("int") .. "(" .. m:getattr("int") .. ") int, " ..
   m:baseattr("wis") .. "(" .. m:getattr("wis") .. ") wis, " ..
@@ -133,7 +134,7 @@ function command.say(player, args)
   player:send("You say, \"" .. message .. "\"")
   broadcastroom(
     player,
-    player.client:getpeername() .. " says, \"" .. message .. "\""
+    player.mob.name .. " says, \"" .. message .. "\""
   )
 end
 
@@ -173,6 +174,127 @@ function command.train(player, args)
     player:send(trainer.name .. " provides you with sacred knowledge and training. Your " .. attr .. " increases!")
   else
     player:send(trainer.name .. " says, \"I cannot train you in that.\"")
+  end
+end
+
+function command.mob(player, args)
+  local action = args[2]
+  if action == "create" then
+    mob:new("a critter")
+    location:addmob(mob.id, location.mobs[player.mob.id])
+    player:send("You conjure a critter from the void.")
+    broadcastroom(player, player.mob.name .. " waves its hands and a critter pops into existence from the void.")
+  end
+end
+
+function command.area(player, args)
+
+  if args[2] == "create" then
+    local id = args[3]
+    local a
+    player:ask("New area id is: '" .. id .. "', confirm? (yes/no) ", function(args)
+      if args[1] == "yes" then
+        area:new(id)
+        player:ask("What is the proper name for this new area? ", function(args)
+          area.list[id].name = table.concat(args, " ")
+          player:ask("What should the credits line be? ", function(args)
+            area.list[id].credits = table.concat(args, " ")
+            area:roomswap(location.mobs[player.mob.id], room.list[location.mobs[player.mob.id]].area, id)
+            player:send("Area created!")
+          end)
+        end)
+      else
+        player:send("Cancel new area request.")
+      end
+    end)
+  elseif args[2] == "set" then
+  elseif args[2] == nil then
+    local r = room.list[location.mobs[player.mob.id]]
+    local a = area.list[r.area]
+    player:send("You are in " .. a.name .. ". Credits:\n" .. a.credits)
+  end
+end
+
+function command.room(player, args)
+  if args[2] == "create" then
+    direction = args[3]
+    if room.isdirection(direction) then
+      local playerlocation = location.mobs[player.mob.id]
+      local playerroom = room.list[playerlocation]
+      if playerroom.directions[direction] then
+        player:send("A room already exists.")
+      else
+        r = room:new()
+        r.name = "A new room"
+        r.description = "A new room has popped into existence from the void. It is up to you to customize it."
+        r.area = playerroom.area
+        area:addroom(r)
+        room:to(playerlocation, direction, r.id)
+        room:to(r.id, room.oppositedir(direction), playerlocation)
+        player:send("A room is summoned from the void.")
+      end
+    else
+      player:send("That is not a direction.")
+    end
+  elseif args[2] == "name" or args[2] == "description" then
+    local property = args[2]
+    table.remove(args, 1)
+    table.remove(args, 1)
+    room:update(location.mobs[player.mob.id], property, table.concat(args, " "))
+    player:send("You updated the room " .. property .. ".")
+  else
+    player:send("Cannot create that.")
+  end
+end
+
+function command.flag(player, args)
+  if args[2] == nil then
+    if player.flag then
+      player:send("Your flag is at " .. room.list[player.flag].name)
+    else
+      player:send("Set a flag with: flag set")
+    end
+  elseif args[2] == "set" then
+    player.flag = location.mobs[player.mob.id]
+    player:send("You set your flag at " .. room.list[player.flag].name)
+  end
+end
+
+function command.gate(player, args)
+  if room.isdirection(args[2]) then
+    if not player.flag then
+      player:send("You must set a flag first.")
+    else
+      room:to(location.mobs[player.mob.id], args[2], player.flag)
+      player:send("Gate created successfully!")
+    end
+  else
+    player:send("That is not a valid direction. Command is: proxy <direction>")
+  end
+end
+
+function command.proxy(player, args)
+  if room.isdirection(args[2]) then
+    if not player.flag then
+      player:send("You must set a flag first.")
+    else
+      room:to(location.mobs[player.mob.id], args[2], player.flag)
+      room:to(player.flag, room.oppositedir(args[2]), location.mobs[player.mob.id])
+      player:send("Proxy created successfully!")
+    end
+  else
+    player:send("That is not a valid direction. Command is: proxy <direction>")
+  end
+end
+
+function command.save(player, args)
+  if args[2] == nil then
+    player:send("Saving not implemented yet")
+  elseif args[2] == "boinga" then
+    for i, a in pairs(area.list) do
+      area:save(a)
+    end
+    player:send("Boinga is saved.")
   end
 end
 

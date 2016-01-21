@@ -3,7 +3,7 @@ local race = require "race"
 local skill = require "skill"
 local class = require "class"
 local mob = {
-  mobs = {}
+  list = {}
 }
 
 local position = {
@@ -55,100 +55,13 @@ local function trim(s)
   return (s:gsub("^%s*(.-)%s*$", "%1"))
 end
 
-function mob:load(loader)
-  local lastmob = 1
-  while true do
-    local m = self:new()
-    local line = loader:nextbuf()
-    local id = tonumber(string.sub(line, 2))
-    if id == 0 then return end
-    m.id = id
-    m.name = loader:string()
-    m.shortdesc = loader:string()
-    m.longdesc = trim(loader:string())
-    m.description = loader:string()
-    m.race = loader:string()
-    while string.sub(loader:peekbuf(), -1) == "~" do
-      loader:nextbuf() -- spec_words
-    end
-    m.act = loader:nextval()
-    m.affectedby = loader:nextval()
-    m.alignment = loader:nextnum()
-    m.group = loader:nextval()
-    m.level = loader:nextnum()
-    m.hitroll = loader:nextnum()
-    m.hit = {}
-    m.hit["number"] = loader:nextnum()
-    loader:character()
-    m.hit["type"] = loader:nextnum()
-    loader:character()
-    m.hit["bonus"] = loader:nextnum()
-
-    m.mana = {}
-    m.mana["number"] = loader:nextnum()
-    loader:character()
-    m.mana["type"] = loader:nextnum()
-    loader:character()
-    m.mana["bonus"] = loader:nextnum()
-
-    -- read damage dice
-    m.damage = {}
-    m.damage["number"] = loader:nextnum()
-    loader:character()
-    m.damage["type"] = loader:nextnum()
-    loader:character()
-    m.damage["bonus"] = loader:nextnum()
-    m.damtype = loader:nextval()
-
-    -- read armor class
-    m.ac = {
-      pierce = loader:nextnum(),
-      bash = loader:nextnum(),
-      slash = loader:nextnum(),
-      exotic = loader:nextnum()
-    }
-
-    -- read flags and add in data from race table
-    m.offflags = loader:nextval()
-    m.immflags = loader:nextval()
-    m.resflags = loader:nextval()
-    m.vulnflags = loader:nextval()
-
-    -- vital statistics
-    m.startpos = loader:nextval()
-    m.defaultpos = loader:nextval()
-    m.position = m.defaultpos
-    m.sex = loader:nextval()
-    m.wealth = loader:nextval()
-    m.form = loader:nextval()
-    m.parts = loader:nextval()
-    m.size = loader:nextval()
-    m.material = loader:nextval()
-
-    while loader:peekbuf(loader.cursor) == "F" do
-      loader:nextbuf()
-    end
-
-    if id == nil then
-      print("No id")
-      print("------- LAST MOB -------")
-      require "pl.pretty".dump(lastmob)
-      print("------- CURRENT MOB -------")
-      require "pl.pretty".dump(m)
-      os.exit()
-    end
-    self.mobs[id] = m
-    lastmob = m
-  end
-end
-
 function mob:getattr(attrname)
-  local rattr = race.races[self.race]["attr"][attrname] or 0;
+  local rattr = race.list[self.race]["attr"][attrname] or 0;
   local attr = self.attr[attrname] or 0 + rattr
   local maxattr = rattr + 4
 
   if self.class then
-    local amount = class.classes[self.class]["attr"][attrname] or 0
+    local amount = class.list[self.class]["attr"][attrname] or 0
     if maxattr then
       maxattr = maxattr + amount
     end
@@ -163,7 +76,7 @@ function mob:getattr(attrname)
 end
 
 function mob:baseattr(attrname)
-  local rattr = race.races[self.race]["attr"][attrname] or 0;
+  local rattr = race.list[self.race]["attr"][attrname] or 0;
   local attr = self.attr[attrname] or 0 + rattr
 
   return attr
@@ -177,14 +90,12 @@ function mob:new(name, racetype, classtype)
 
   local tolevel = race:tolevel(racetype)
   local m = {
+    id = #self.list+1,
     name = name,
     shortdesc = "",
-    longdesc = "",
-    description = "",
-    specwords = {},
+    desc = "",
     isnpc = true,
     race = racetype,
-    roomid = 0,
     level = 1,
     trains = 1,
     practices = 5,
@@ -198,25 +109,19 @@ function mob:new(name, racetype, classtype)
     attr = {
       hp = 20,
       mana = 100,
-      mv = 100,
-      hit = 1,
-      dam = 1
-    },
-    maxattr = {
-      hp = 20,
-      mana = 100,
       mv = 100
-    }
+    },
+    hp = 20,
+    mana = 100,
+    mv = 100
   }
 
   setmetatable(m, self)
   self.__index = self
 
-  return m
-end
+  self.list[m.id] = m
 
-function mob:setroomid(roomid)
-  self.roomid = roomid
+  return m
 end
 
 function mob:levelup()

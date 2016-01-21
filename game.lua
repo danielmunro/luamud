@@ -2,16 +2,21 @@ local socket = require "socket"
 local room = require "room"
 local mob = require "mob"
 local command = require "command"
-local loader = require "loader"
+local location = require "location"
+local area = require "area"
+local player = require "player"
+
+local DEFAULT_HEAL_RATE = 0.2
+local DEFAULT_MANA_RATE = 0.3
 
 local function nexttick()
   return os.time() + math.random(10, 15)
 end
 
 local function regen(mob, stat, regen)
-  mob.attr[stat] = mob.attr[stat] or 0 + (mob.maxattr[stat] or 0 * regen)
-  if mob.attr[stat] > mob.maxattr[stat] then
-    mob.attr[stat] = mob.maxattr[stat]
+  mob[stat] = mob[stat] + mob.attr[stat] * regen
+  if mob[stat] > mob.attr[stat] then
+    mob[stat] = mob.attr[stat]
   end
 end
 
@@ -23,20 +28,10 @@ local game = {
   hour = 1
 }
 
-local playermt = {}
-
-function playermt:send(message)
-  self.client:send(message .. "\n")
-end
-
-function game:start()
-  game.server = assert(socket.bind("127.0.0.1", 55439))
+function game:start(port)
+  game.server = assert(socket.bind("127.0.0.1", port))
   game.server:settimeout(0)
-  local ip, port = game.server:getsockname()
-  for i in io.popen("ls realm/"):lines() do
-    if string.find(i,"%.are$") then loader:load("realm/" .. i) end
-  end
-  loader:done()
+  area:load()
   print("Please telnet to localhost on port " .. port)
 end
 
@@ -45,21 +40,12 @@ function game:checknewclient()
 
   if client then
     client:settimeout(0)
+    local p = player:new(client)
+    location:addmob(p.mob.id, room.START_ROOM)
+    command.look(p)
+    prompt(p)
 
-    local player = {
-      client = client,
-      roomid = room.rooms[3001].id,
-      mob = mob:new("Foo", "human")
-    }
-
-    setmetatable(player, playermt)
-    playermt.__index = playermt
-
-    player.mob.isnpc = false
-    room.rooms[player.roomid]:addmob(player.mob)
-    command.look(player)
-    prompt(player)
-    table.insert(self.players, player)
+    table.insert(self.players, p)
   end
 end
 
@@ -77,23 +63,17 @@ function game:loop()
     self.tick = time
     self.nexttick = nexttick()
 
-    local count = 0
-    local failure = 0
-    for i, m in pairs(mob.mobs) do
-      count =  count + 1
-      local r = room.rooms[m.roomid]
-      if r == nil then
-        failure = failure + 1
-      else
-        regen(m, "hp", r.healrate)
-        regen(m, "mana", r.manarate)
-        regen(m, "mv", r.healrate)
-      end
+    for i, m in pairs(mob.list) do
+      local r = room.list[location.mobs[m.id]]
+      regen(m, "hp", r.healrate or DEFAULT_HEAL_RATE)
+      regen(m, "mana", r.manarate or DEFAULT_MANA_RATE)
+      regen(m, "mv", r.healrate or DEFAULT_HEAL_RATE)
     end
-    print(count .. " mobs in boinga, "..failure.." failed room checks")
     for i, p in pairs(self.players) do
       prompt(p)
     end
+    print("tick --> " .. #room.list .. " rooms, " .. #mob.list .. " mobs, " .. #self.players .. " players")
+    print("next tick in " .. (self.nexttick - os.time()) .. " seconds")
   end
 end
 

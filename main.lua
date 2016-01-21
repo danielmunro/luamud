@@ -1,6 +1,18 @@
 local game = require "game"
 local command = require "command"
 local room = require "room"
+local location = require "location"
+local random = math.random
+
+math.randomseed(os.time())
+
+function uuid()
+    local template ='xxxyxxxyxxxyxxxyxxxyxxxyxxxyxxxy'
+    return string.gsub(template, '[xy]', function (c)
+        local v = (c == 'x') and random(0, 0xf) or random(8, 0xb)
+        return string.format('%x', v)
+    end)
+end
 
 local function split(input)
   local result = {}
@@ -34,6 +46,10 @@ local function findcommand(input)
   end
 end
 
+function prompt(player)
+  player.client:send("\n" .. player.mob.hp .. "hp " .. player.mob.mana .. "mana " .. player.mob.mv .. "mv> ")
+end
+
 function broadcast(message)
   for i, p in pairs(game.players) do
     p:send(message)
@@ -41,18 +57,16 @@ function broadcast(message)
 end
 
 function broadcastroom(playersender, message)
+  local senderlocation = location.mobs[playersender.mob.id]
   for i, p in pairs(game.players) do
-    if p.roomid == id and p ~= playersender then
+    local plocation = location.mobs[p.mob.id]
+    if senderlocation == plocation and p ~= playersender then
       p:send(message)
     end
   end
 end
 
-function prompt(player)
-  player.client:send("\n" .. player.mob.attr["hp"] .. "hp " .. player.mob.attr["mana"] .. "mana " .. player.mob.attr["mv"] .. "mv> ")
-end
-
-game:start()
+game:start(arg[1])
 
 while 1 do
 
@@ -64,16 +78,25 @@ while 1 do
       if err == "closed" then
         table.remove(game.players, i)
       elseif input then
+        if input == "!" then input = p.lastinput end
         local args = split(input)
-        local playeraction = findcommand(args[1])
 
-        if playeraction then
-          playeraction(p, args)
+        if p.callback then
+          local cb = p.callback
+          p.callback = nil
+          cb(args)
         else
-          p:send("What?")
+          local playeraction = findcommand(args[1])
+
+          if playeraction then
+            playeraction(p, args)
+          else
+            p:send("What?")
+          end
         end
 
-        prompt(p)
+        if not p.callback then prompt(p) end
+        if input ~= "!" then p.lastinput = input end
       end
     end
 end

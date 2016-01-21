@@ -1,7 +1,10 @@
 local skill = require "skill"
 
 local race = {
-  races = {
+  sizes = {
+    medium = 2
+  },
+  list = {
     human = {
       name = "human",
       attr = { str = 15, int = 15, wis = 15, dex = 15, con = 15, cha = 15 },
@@ -57,7 +60,7 @@ local race = {
 
 function race:tolevel(r)
   local tolevel = 0
-  local race = self.races[r]
+  local race = self.list[r]
 
   for i, a in pairs(race.attr) do
     tolevel = tolevel + (a * 10)

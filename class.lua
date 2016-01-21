@@ -1,5 +1,5 @@
 local class = {
-  classes = {
+  list = {
     warrior = {
       attr = { str = 2, con = 1, dex = 1, wis = -1, int = -2 }
     },
