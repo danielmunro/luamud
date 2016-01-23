@@ -41,8 +41,8 @@ function game:checknewclient()
   if client then
     client:settimeout(0)
     local p = player:new(client)
-    location:addmob(p.mob.id, room.START_ROOM)
-    command.look(p)
+    -- location:addmob(p.mob.id, room.START_ROOM)
+    -- command.look(p)
     prompt(p)
 
     table.insert(self.players, p)
@@ -63,15 +63,25 @@ function game:loop()
     self.tick = time
     self.nexttick = nexttick()
 
+    -- regen
     for i, m in pairs(mob.list) do
       local r = room.list[location.mobs[m.id]]
       regen(m, "hp", r.healrate or DEFAULT_HEAL_RATE)
       regen(m, "mana", r.manarate or DEFAULT_MANA_RATE)
       regen(m, "mv", r.healrate or DEFAULT_HEAL_RATE)
     end
+
+    -- save players, prompt them
     for i, p in pairs(self.players) do
+      p:save()
       prompt(p)
     end
+
+    -- save all areas -- boinga
+    for i, a in pairs(area.list) do
+      area:save(a)
+    end
+
     print("tick --> " .. #room.list .. " rooms, " .. #mob.list .. " mobs, " .. #self.players .. " players")
     print("next tick in " .. (self.nexttick - os.time()) .. " seconds")
   end

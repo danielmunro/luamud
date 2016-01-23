@@ -2,6 +2,7 @@ local room = require "room"
 local mob = require "mob"
 local location = require "location"
 local area = require "area"
+local item = require "item"
 
 local command = {
   priority = {
@@ -41,7 +42,7 @@ function command.help(player, args)
 end
 
 function command.quit(player)
-  room.rooms[player.roomid]:removemob(player.mob)
+  location:removemob(player.mob.id, location.mobs[player.mob.id])
   player.client:close()
 end
 
@@ -63,29 +64,34 @@ function command.look(player, args)
       end
     end
   else
-    local directions = {}
+
+    local message = r.name .. "\n" .. r.description .. "\n\n" .. "Exits ["
+
     for i, v in pairs(r.directions) do
-      table.insert(directions, string.sub(i, 1, 1))
+      message = message .. string.sub(i, 1, 1)
     end
 
-    local mobs = {}
+    message = message .. "]\n"
+
+    -- mobs
     for i, v in pairs(location.rooms[l]) do
       if v ~= player.mob.id then
         local m = mob.list[v]
         if m.longdesc then
-          table.insert(mobs, "\n" .. m.longdesc)
+          message = message .. m.longdesc .. "\n"
         else
-          table.insert(mobs, "\n" .. m.name .. " is here.")
+          message = message .. m.name .. " is here.\n"
         end
       end
     end
 
-    player:send(
-      r.name .. "\n" ..
-      r.description .. "\n\n" ..
-      "Exits [" .. table.concat(directions) .. "]" ..
-      table.concat(mobs)
-    )
+    if item.inv[l] then
+      for i, item in pairs(item.inv[l]) do
+        message = message .. item.name .. " is on the ground.\n"
+      end
+    end
+
+    player:send(message)
   end
 end
 
@@ -177,13 +183,94 @@ function command.train(player, args)
   end
 end
 
+function command.inventory(player)
+  local message = "Your inventory:\n"
+  if item.inv[player.mob.id] then
+    for i, item in pairs(item.inv[player.mob.id]) do
+      message = message .. item.name .. "\n"
+    end
+  else
+    message = message .. "carrying nothing\n"
+  end
+  player.client:send(message)
+end
+
+function command.reset(player, args)
+  local roomid = location.mobs[player.mob.id]
+  local r = location.rooms[roomid]
+  for i, m in pairs(r) do
+    if mob.list[m] then
+      area:addmobreset(m, roomid)
+    end
+  end
+  if item.inv[roomid] then
+    for i, item in pairs(item.inv[roomid]) do
+      area:additemreset(item, roomid)
+    end
+  end
+  player:send("Room reset.")
+end
+
+function command.drop(player, args)
+  table.remove(args, 1)
+  local itemname = table.concat(args, " ")
+  for i, it in pairs(item.inv[player.mob.id]) do
+    if match(it.name, itemname) then
+      table.remove(item.inv[player.mob.id], i)
+      item:addinv(location.mobs[player.mob.id], it)
+      player:send("You drop " .. it.name)
+      broadcastroom(player, player.mob.name .. " drops " .. it.name)
+      return
+    end
+  end
+
+  player:send("You don't have anything like that.")
+end
+
+function command.get(player, args)
+  table.remove(args, 1)
+  local itemname = table.concat(args, " ")
+  for i, it in pairs(item.inv[location.mobs[player.mob.id]]) do
+    if match(it.name, itemname) then
+      table.remove(item.inv[location.mobs[player.mob.id]], i)
+      item:addinv(player.mob.id, it)
+      player:send("You pick up " .. it.name)
+      broadcastroom(player, player.mob.name .. " picks up " .. it.name)
+      return
+    end
+  end
+
+  player:send("You don't see anything like that here.")
+end
+
+function command.item(player, args)
+  local action = args[2]
+  if action == "create" then
+    table.remove(args, 1)
+    table.remove(args, 1)
+    local name = table.concat(args, " ")
+    local i = item:new(name)
+    item:addinv(player.mob.id, i)
+    player:send("You create " .. name .. " out of the void")
+  end
+end
+
 function command.mob(player, args)
   local action = args[2]
   if action == "create" then
-    mob:new("a critter")
-    location:addmob(mob.id, location.mobs[player.mob.id])
+    local m = mob:new("a critter")
+    m.isnpc = true
+    location:addmob(m.id, location.mobs[player.mob.id])
+    area:addmob(m)
     player:send("You conjure a critter from the void.")
     broadcastroom(player, player.mob.name .. " waves its hands and a critter pops into existence from the void.")
+  elseif action == "report" then
+    local message = "mobs in room:\n"
+    for i, m in pairs(area.list[room.list[location.mobs[player.mob.id]].area].mobs) do
+      message = message .. m.name .. " (#" .. m.id .. ")\n"
+    end
+  else
+    player:send("Not understood.")
   end
 end
 
@@ -289,7 +376,8 @@ end
 
 function command.save(player, args)
   if args[2] == nil then
-    player:send("Saving not implemented yet")
+    player:save()
+    player:send("Saved. Remember, saving is automatic.")
   elseif args[2] == "boinga" then
     for i, a in pairs(area.list) do
       area:save(a)

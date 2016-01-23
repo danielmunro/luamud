@@ -1,0 +1,58 @@
+---
+itemresets:
+  start:
+  - id: ab9a6abb7e1a0a3b63098b097839059a
+    material: void
+    weight: 0
+    name: a wooden sword
+rooms:
+  c7830aae-68d0-408a-8616-a9ed81a6bec4:
+    description: A new room has popped into existence from the void. It is up to you
+      to customize it.
+    items: {}
+    area: midgaard
+    id: c7830aae-68d0-408a-8616-a9ed81a6bec4
+    directions:
+      north: start
+    name: A new room
+  start:
+    description: A new room has popped into existence from the void. It is up to you
+      to customize it.
+    items: {}
+    area: midgaard
+    id: start
+    directions:
+      west: 2c7830aa-e68d-4008-a061-6a9ed81a6bec
+      south: c7830aae-68d0-408a-8616-a9ed81a6bec4
+    name: A new room
+filename: ''
+mobresets:
+  29a89f7bb5984119e9d8f53955d8c769: start
+id: midgaard
+mobs:
+  29a89f7bb5984119e9d8f53955d8c769:
+    isnpc: true
+    attr:
+      mana: 100
+      mv: 100
+      hp: 20
+    hp: 20
+    practices: 5
+    id: 29a89f7bb5984119e9d8f53955d8c769
+    position: 8
+    act: {}
+    name: a critter
+    shortdesc: ''
+    desc: ''
+    level: 1
+    mv: 100
+    mana: 100
+    race: critter
+    trains: 1
+    xp:
+      total: 900
+      tnl: 900
+      tolevel: 900
+credits: foo
+name: Midgaard
+...

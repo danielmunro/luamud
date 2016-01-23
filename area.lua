@@ -1,5 +1,8 @@
 local lyaml = require "lyaml"
 local room = require "room"
+local location = require "location"
+local mob = require "mob"
+local item = require "item"
 
 local area = {
   list = {}
@@ -9,7 +12,7 @@ function area:load()
   for i in io.popen("ls data/areas/"):lines() do
     print("loading " .. i .. " area file")
     local f = io.open("data/areas/" .. i, "r")
-    local data = lyaml.load(f:read("*all")),
+    local data = lyaml.load(f:read("*all"))
     f:close()
 
     self.list[data.id] = data
@@ -29,6 +32,22 @@ function area:load()
       end
       room.list[r.id] = r
     end
+
+    for j, r in pairs(data.mobs) do
+      mob.list[j] = r
+    end
+
+    for mobid, roomid in pairs(data.mobresets) do
+      location:addmob(mobid, roomid)
+    end
+
+    for roomid, inv in pairs(data.itemresets) do
+      for i, it in pairs(inv) do
+        it.id = uuid()
+        item:addinv(roomid, it)
+      end
+    end
+
   end
 end
 
@@ -51,7 +70,10 @@ function area:new(id)
     name = "",
     filename = "",
     credits = "",
-    rooms = {}
+    rooms = {},
+    mobs = {},
+    mobresets = {},
+    itemresets = {}
   }
 
   self.list[id] = newarea
@@ -59,6 +81,20 @@ end
 
 function area:addroom(room)
   self.list[room.area].rooms[room.id] = room
+end
+
+function area:addmob(mob)
+  self.list[room.list[location.mobs[mob.id]].area].mobs[mob.id] = mob
+end
+
+function area:addmobreset(mobid, roomid)
+  self.list[room.list[roomid].area].mobresets[mobid] = roomid
+end
+
+function area:additemreset(item, roomid)
+  local a = self.list[room.list[roomid].area]
+  if not a.itemresets[roomid] then a.itemresets[roomid] = {} end
+  table.insert(a.itemresets[roomid], item)
 end
 
 return area

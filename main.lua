@@ -6,6 +6,14 @@ local random = math.random
 
 math.randomseed(os.time())
 
+function map(func, array)
+  local new_array = {}
+  for i,v in ipairs(array) do
+    new_array[i] = func(v)
+  end
+  return new_array
+end
+
 function uuid()
     local template ='xxxyxxxyxxxyxxxyxxxyxxxyxxxyxxxy'
     return string.gsub(template, '[xy]', function (c)
@@ -22,6 +30,15 @@ local function split(input)
   end
 
   return result
+end
+
+function match(key, input)
+  args = split(key)
+  for i, a in pairs(args) do
+    if string.find(a, input) == 1 then return true end
+  end
+
+  return false
 end
 
 local function findcommand(input)
@@ -47,7 +64,9 @@ local function findcommand(input)
 end
 
 function prompt(player)
-  player.client:send("\n" .. player.mob.hp .. "hp " .. player.mob.mana .. "mana " .. player.mob.mv .. "mv> ")
+  if player.mob then
+    player.client:send("\n" .. player.mob.hp .. "hp " .. player.mob.mana .. "mana " .. player.mob.mv .. "mv> ")
+  end
 end
 
 function broadcast(message)

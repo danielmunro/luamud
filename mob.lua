@@ -90,7 +90,7 @@ function mob:new(name, racetype, classtype)
 
   local tolevel = race:tolevel(racetype)
   local m = {
-    id = #self.list+1,
+    id = uuid(),
     name = name,
     shortdesc = "",
     desc = "",
@@ -115,9 +115,6 @@ function mob:new(name, racetype, classtype)
     mana = 100,
     mv = 100
   }
-
-  setmetatable(m, self)
-  self.__index = self
 
   self.list[m.id] = m
 
