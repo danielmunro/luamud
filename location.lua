@@ -15,12 +15,12 @@ end
 
 function location:removemob(mobid, roomid)
   if self.rooms[roomid] then
-    for i, m in pairs(self.rooms[roomid]) do
+    first(self.rooms[roomid], function(m)
       if m == mobid then
         table.remove(self.rooms[roomid], i)
-        return
+        return true
       end
-    end
+    end)
   end
 end
 

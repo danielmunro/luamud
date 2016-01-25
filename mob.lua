@@ -7,15 +7,15 @@ local mob = {
 }
 
 local position = {
-  DEAD = 0,
-  MORTAL = 1,
-  INCAP = 2,
-  STUNNED = 3,
-  SLEEPING = 4,
-  RESTING = 5,
-  SITTING = 6,
-  FIGHTING = 7,
-  STANDING = 8
+  DEAD = "dead",
+  MORTAL = "mortal",
+  INCAP = "incapacitated",
+  STUNNED = "stunned",
+  SLEEPING = "sleeping",
+  RESTING = "resting",
+  SITTING = "sitting",
+  FIGHTING = "fighting",
+  STANDING = "standing"
 }
 
 local act = {
@@ -53,6 +53,25 @@ end
 
 local function trim(s)
   return (s:gsub("^%s*(.-)%s*$", "%1"))
+end
+
+function mob:conditionstr(m)
+  local p = m.attr.hp / m.hp
+  if p < 0.1 then
+    return "is in awful condition"
+  elseif p < 0.15 then
+    return "looks pretty hurt"
+  elseif p < 0.30 then
+    return "has some big nasty wounds and scratches"
+  elseif p < 0.50 then
+    return "has quite a few wounds"
+  elseif p < 0.75 then
+    return "has some small wounds and bruises"
+  elseif p < 0.99 then
+    return "has a few scratches"
+  else
+    return "is in excellent condition"
+  end
 end
 
 function mob:getattr(attrname)

@@ -43,7 +43,14 @@ function playermt:load(mobname)
   f:close()
 
   self.mob = data["mob"]
+  mob.list[self.mob.id] = self.mob
   item.inv[self.mob.id] = data["inv"]
+end
+
+function playermt:prompt()
+  if self.mob then
+    self.client:send("\n" .. self.mob.hp .. "hp " .. self.mob.mana .. "mana " .. self.mob.mv .. "mv> ")
+  end
 end
 
 function playermt:mobprompt()

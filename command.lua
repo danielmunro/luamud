@@ -32,6 +32,29 @@ local function move(player, direction)
   end
 end
 
+local function findmob(roomid, input)
+  return first(location.rooms[roomid], function(mobid)
+    local m = mob.list[mobid]
+    for word in m.name:gmatch("%w+") do
+      if word:sub(1, input:len()) == input then
+        return m
+      end
+    end
+  end)
+end
+
+local function finditem(invid, input)
+  if item.inv[invid] then
+    return first(item.inv[invid], function(i)
+      for word in i.name:gmatch("%w+") do
+        if word:sub(1, input:len()) == input then
+          return i
+        end
+      end
+    end)
+  end
+end
+
 function command.help(player, args)
   local topic = args[2]
   if topic == "create" then
@@ -47,52 +70,69 @@ function command.quit(player)
 end
 
 function command.gossip(player, args)
-    table.remove(args, 1)
-    broadcast(player.client:getpeername() .. " gossips, \"" .. table.concat(args, " ") .. "\"")
+    broadcast(player.client:getpeername() .. " gossips, \"" .. table.concat(args, " ", 2) .. "\"")
 end
 
 function command.look(player, args)
-  local l = location.mobs[player.mob.id]
-  local r = room.list[l]
-  if args and args[2] ~= nil then
-    for i, m in pairs(r.mobs) do
-      for word in m.name:gmatch("%w+") do
-        if word:sub(1, args[2]:len()) == args[2] then
-          player:send(m.description)
-          return
-        end
-      end
-    end
-  else
+  local roomid = location.mobs[player.mob.id]
+  local r = room.list[roomid]
 
-    local message = r.name .. "\n" .. r.description .. "\n\n" .. "Exits ["
+  if args and args[2] then
 
-    for i, v in pairs(r.directions) do
-      message = message .. string.sub(i, 1, 1)
+    local m = findmob(roomid, args[2])
+
+    if m then
+      local description = m.description or ""
+      player:send(description .. m.name .. " " .. mob:conditionstr(m) .. ".")
+      return
     end
 
-    message = message .. "]\n"
+    if handled then return end
 
-    -- mobs
-    for i, v in pairs(location.rooms[l]) do
-      if v ~= player.mob.id then
-        local m = mob.list[v]
-        if m.longdesc then
-          message = message .. m.longdesc .. "\n"
-        else
-          message = message .. m.name .. " is here.\n"
-        end
-      end
+    local i = finditem(roomid, args[2])
+
+    if not i then
+      i = finditem(player.mob.id, args[2])
     end
 
-    if item.inv[l] then
-      for i, item in pairs(item.inv[l]) do
-        message = message .. item.name .. " is on the ground.\n"
-      end
+    if i then
+      player:send(i.description or i.name .. " is here.")
+      return
     end
 
-    player:send(message)
+    player:send("You do not see that.")
+    return
   end
+
+  local message = r.name .. "\n" .. r.description .. "\n\n" .. "Exits ["
+
+  -- directions
+  each(r.directions, function(roomid, dir)
+    message = message .. string.sub(dir, 1, 1)
+  end)
+
+  message = message .. "]\n"
+
+  -- mobs
+  each(location.rooms[roomid], function(mobid)
+    if mobid ~= player.mob.id then
+      local m = mob.list[mobid]
+      if m.longdesc then
+        message = message .. m.longdesc .. "\n"
+      else
+        message = message .. m.name .. " is here.\n"
+      end
+    end
+  end)
+
+  -- items in room
+  if item.inv[roomid] then
+    each(item.inv[roomid], function(i)
+      message = message .. i.name .. " is on the ground.\n"
+    end)
+  end
+
+  player:send(message:sub(1, -2))
 end
 
 function command.score(player)
@@ -135,8 +175,7 @@ function command.down(player)
 end
 
 function command.say(player, args)
-  table.remove(args, 1)
-  message = table.concat(args, " ")
+  message = table.concat(args, " ", 2)
   player:send("You say, \"" .. message .. "\"")
   broadcastroom(
     player,
@@ -154,14 +193,11 @@ function command.train(player, args)
   local attr = args[2]
   local attrs = {str = "strength", int = "intelligence", wis = "wisdom", dex = "dexterity", con = "constitution", cha = "charisma"}
   local stats = {hp = 1, mana = 1, mv = 1}
-  local trainer = false
 
-  for i, m in pairs(player.room.mobs) do
-    if m.trainer then
-      trainer = m
-      break
-    end
-  end
+  local trainer = first(location.rooms[location.mobs[player.mob.id]], function(m)
+    local listmob = mob.list[location.mobs[player.mob.id]]
+    if listmob.trainer then return listmob end
+  end)
 
   if not trainer then
     player:send("There are no trainers here.")
@@ -201,6 +237,8 @@ function command.reset(player, args)
   for i, m in pairs(r) do
     if mob.list[m] then
       area:addmobreset(m, roomid)
+    else
+      print("reset for nonexistent mob", i, m, roomid)
     end
   end
   if item.inv[roomid] then
@@ -212,14 +250,13 @@ function command.reset(player, args)
 end
 
 function command.drop(player, args)
-  table.remove(args, 1)
-  local itemname = table.concat(args, " ")
+  local itemname = table.concat(args, " ", 2)
   for i, it in pairs(item.inv[player.mob.id]) do
     if match(it.name, itemname) then
       table.remove(item.inv[player.mob.id], i)
       item:addinv(location.mobs[player.mob.id], it)
-      player:send("You drop " .. it.name)
-      broadcastroom(player, player.mob.name .. " drops " .. it.name)
+      player:send("You drop " .. it.name .. ".")
+      broadcastroom(player, player.mob.name .. " drops " .. it.name .. ".")
       return
     end
   end
@@ -228,14 +265,13 @@ function command.drop(player, args)
 end
 
 function command.get(player, args)
-  table.remove(args, 1)
-  local itemname = table.concat(args, " ")
+  local itemname = table.concat(args, " ", 2)
   for i, it in pairs(item.inv[location.mobs[player.mob.id]]) do
     if match(it.name, itemname) then
       table.remove(item.inv[location.mobs[player.mob.id]], i)
       item:addinv(player.mob.id, it)
-      player:send("You pick up " .. it.name)
-      broadcastroom(player, player.mob.name .. " picks up " .. it.name)
+      player:send("You pick up " .. it.name .. ".")
+      broadcastroom(player, player.mob.name .. " picks up " .. it.name .. ".")
       return
     end
   end
@@ -245,13 +281,28 @@ end
 
 function command.item(player, args)
   local action = args[2]
-  if action == "create" then
-    table.remove(args, 1)
-    table.remove(args, 1)
-    local name = table.concat(args, " ")
+  if match("create", action) then
+    local name = table.concat(args, " ", 3)
     local i = item:new(name)
     item:addinv(player.mob.id, i)
     player:send("You create " .. name .. " out of the void")
+  elseif match("info", action) then
+    local i = finditem(player.mob.id, args[3])
+    local attrstr = ""
+    each(i.attr, function(v, attr)
+      attrstr = attrstr .. "+" .. v .. " " .. attr .. " "
+    end)
+    player:send(i.id .. "\n" .. i.name .. "\n" .. "weight: " .. i.weight ..
+    ", material: " .. i.material .. "\n" .. attrstr)
+  elseif match("material", action) then
+    local i = finditem(player.mob.id, args[3])
+    i.material = args[4]
+  elseif match("weight", action) then
+    local i = finditem(player.mob.id, args[3])
+    i.weight = tonumber(args[4])
+  elseif match("attr", action) then
+    local i = finditem(player.mob.id, args[3])
+    i.attr[args[4]] = tonumber(args[5])
   end
 end
 
@@ -325,9 +376,7 @@ function command.room(player, args)
     end
   elseif args[2] == "name" or args[2] == "description" then
     local property = args[2]
-    table.remove(args, 1)
-    table.remove(args, 1)
-    room:update(location.mobs[player.mob.id], property, table.concat(args, " "))
+    room:update(location.mobs[player.mob.id], property, table.concat(args, " ", 3))
     player:send("You updated the room " .. property .. ".")
   else
     player:send("Cannot create that.")

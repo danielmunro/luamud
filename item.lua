@@ -1,3 +1,5 @@
+local attributes = require "attributes"
+
 local item = {
   materials = {
     "wood", "stone", "steel", "copper", "leather", "void"
@@ -18,7 +20,8 @@ function item:new(item)
     name = name,
     weight = 0,
     material = "void",
-    id = uuid()
+    id = uuid(),
+    attr = attributes.new()
   }
 
   return newitem

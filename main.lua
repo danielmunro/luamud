@@ -6,12 +6,31 @@ local random = math.random
 
 math.randomseed(os.time())
 
-function map(func, array)
-  local new_array = {}
-  for i,v in ipairs(array) do
-    new_array[i] = func(v)
+function map(array, func)
+  local newarray = {}
+  for i, v in pairs(array) do
+    newarray[i] = func(v, i)
   end
-  return new_array
+
+  return newarray
+end
+
+function each(array, func)
+  for i, v in pairs(array) do
+    func(v, i)
+  end
+end
+
+function first(array, func)
+  if not func then
+    func = function(v, i) return v end
+  end
+
+  for i, v in pairs(array) do
+    local r = func(v, i)
+
+    if r then return r end
+  end
 end
 
 function uuid()
@@ -25,20 +44,15 @@ end
 local function split(input)
   local result = {}
 
-  for i in string.gmatch(input, "%S+") do
-    table.insert(result, i)
-  end
+  for i in string.gmatch(input, "%S+") do table.insert(result, i) end
 
   return result
 end
 
 function match(key, input)
-  args = split(key)
-  for i, a in pairs(args) do
-    if string.find(a, input) == 1 then return true end
-  end
-
-  return false
+  return first(split(key), function(k)
+    return string.find(k, input) == 1
+  end)
 end
 
 local function findcommand(input)
@@ -46,43 +60,33 @@ local function findcommand(input)
 
   if not input then return nil end
 
-  for i, v in pairs(command) do
-    if string.find(i, input) == 1 then
-      match[i] = v
-    end
-  end
+  each(command, function(c, i)
+    if string.find(i, input) == 1 then match[i] = c end
+  end)
 
-  for i, v in pairs(command.priority) do
-    if string.find(i, input) == 1 then
-      return match[v]
-    end
-  end
+  local p = first(command.priority, function(p, i)
+    if string.find(i, input) == 1 then return match[p] end
+  end)
 
-  for i, v in pairs(match) do
-    return v
-  end
-end
+  if p then return p end
 
-function prompt(player)
-  if player.mob then
-    player.client:send("\n" .. player.mob.hp .. "hp " .. player.mob.mana .. "mana " .. player.mob.mv .. "mv> ")
-  end
+  return first(match)
 end
 
 function broadcast(message)
-  for i, p in pairs(game.players) do
-    p:send(message)
-  end
+  each(game.players, function(p) p:send(message) end)
 end
 
 function broadcastroom(playersender, message)
+
   local senderlocation = location.mobs[playersender.mob.id]
-  for i, p in pairs(game.players) do
-    local plocation = location.mobs[p.mob.id]
-    if senderlocation == plocation and p ~= playersender then
+
+  each(game.players, function(p)
+    if senderlocation == location.mobs[p.mob.id] and p ~= playersender then
       p:send(message)
     end
-  end
+  end)
+
 end
 
 game:start(arg[1])
@@ -91,7 +95,7 @@ while 1 do
 
     game:loop()
 
-    for i, p in pairs(game.players) do
+    each(game.players, function(p, i)
       local input, err = p.client:receive()
 
       if err == "closed" then
@@ -114,8 +118,9 @@ while 1 do
           end
         end
 
-        if not p.callback then prompt(p) end
+        if not p.callback then p:prompt() end
         if input ~= "!" then p.lastinput = input end
       end
-    end
+
+    end)
 end
