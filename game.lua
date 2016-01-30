@@ -46,7 +46,6 @@ function game:checknewclient()
     client:settimeout(0)
 
     local p = player:new(client)
-    p:prompt()
     table.insert(self.players, p)
 
   end
@@ -77,11 +76,13 @@ function game:loop()
 
     -- save players, prompt them
     f.each(self.players, function(p)
-      f.each(affect:getaffects(p.mob.id), function(a)
-        if a.timeout == 0 and a.weardown then p:send(a.weardown) end
-      end)
-      p:save()
-      p:prompt()
+      if p.mob then
+        f.each(affect:getaffects(p.mob.id), function(a)
+          if a.timeout == 0 and a.weardown then p:send(a.weardown) end
+        end)
+        p:save()
+        p:prompt()
+      end
     end)
 
     -- tick down affects

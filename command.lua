@@ -24,7 +24,7 @@ local function move(player, direction)
     if player.mob.mv >= mvcost then
       player.mob.mv = player.mob.mv - mvcost
       broadcastroom(player, player.mob.name .. " leaves heading " .. direction .. ".")
-      location:removemob(player.mob.id)
+      location:removemob(player.mob.id, roomfrom.id)
       location:addmob(player.mob.id, roomto.id)
       broadcastroom(player, player.mob.name .. " arrives from the " .. room.oppositedir(direction) .. ".")
       command.look(player)
@@ -403,6 +403,7 @@ function command.room(player, args)
         area:addroom(r)
         room:to(playerlocation, direction, r.id)
         room:to(r.id, room.oppositedir(direction), playerlocation)
+        location.rooms[r.id] = {}
         player:send("A room is summoned from the void.")
       end
     else

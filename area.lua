@@ -32,6 +32,7 @@ function area:load()
       end
       room.list[r.id] = r
       item.inv[r.id] = {}
+      location.rooms[r.id] = {}
     end
 
     for j, r in pairs(data.mobs) do

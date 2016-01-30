@@ -89,9 +89,10 @@ while 1 do
           else
             p:send("What?")
           end
+
+          p:prompt()
         end
 
-        if not p.callback then p:prompt() end
         if input ~= "!" then p.lastinput = input end
       end
 

@@ -5,6 +5,7 @@ local room = require "room"
 local location = require "location"
 local command = require "command"
 local item = require "item"
+local location = require "location"
 
 local player = {}
 local playermt = {}
@@ -48,12 +49,10 @@ function playermt:load(mobname)
 end
 
 function playermt:prompt()
-  if self.mob then
-    self.client:send("\n" .. self.mob.hp .. "hp " .. self.mob.mana .. "mana " .. self.mob.mv .. "mv> ")
-  end
+  self.client:send("\n" .. self.mob.hp .. "hp " .. self.mob.mana .. "mana " .. self.mob.mv .. "mv> ")
 end
 
-function playermt:mobprompt()
+function playermt:selectmob()
   self:ask("By what name do you wish to be known (list for existing characters)? ", function(args)
     local mobname = args[1]
     if mobname == "list" then
@@ -62,7 +61,7 @@ function playermt:mobprompt()
         list = list .. m .. "\n"
       end
       self:send(list)
-      self:mobprompt()
+      self:selectmob()
     else
       for i, m in pairs(self.mobs) do
         if m == mobname then
@@ -100,12 +99,12 @@ function playermt:mobprompt()
   end)
 end
 
-function playermt:passwordprompt()
+function playermt:enterpassword()
   self:ask("Please enter a password: ", function(args)
     local p1 = table.concat(args, " ")
     if p1:len() < 5 then
       self:send("Passwords must be greater than 5 characters in length.")
-      self:passwordprompt()
+      self:enterpassword()
     else
       self:ask("Confirm your password: ", function(args)
         local p2 = table.concat(args, " ")
@@ -113,10 +112,36 @@ function playermt:passwordprompt()
           self.password = p1
           self:send("Confirmed!")
           self:save()
-          self:mobprompt()
+          self:selectmob()
         else
           self:send("Passwords do not match. Try again.")
-          self:passwordprompt()
+          self:enterpassword()
+        end
+      end)
+    end
+  end)
+end
+
+function playermt:loginprompt()
+  self:ask("What is your login username (not in-game character)? ", function(args)
+    self.username = args[1]
+    local f = io.open("data/players/" .. self.username .. ".yaml", "r")
+    if f == nil then
+      self:send("New account.")
+      self:enterpassword()
+    else
+      local data = lyaml.load(f:read("*all"))
+      f:close()
+      self:ask("Password: ", function(args)
+        local password = args[1]
+        if data["password"] == password then
+          self:send("Success!")
+          self.password = password
+          self.mobs = data["mobs"]
+          self:selectmob()
+        else
+          self:send("Login failure.")
+          self.client:close()
         end
       end)
     end
@@ -129,37 +154,11 @@ function player:new(client)
     password = "",
     client = client,
     mobs = {}
-    --client = client,
-    --mob = mob:new("Foo", "human")
   }
 
   setmetatable(p, playermt)
   playermt.__index = playermt
-  --p.mob.isnpc = false
-
-  p:ask("What is your login username (not in-game character)? ", function(args)
-    p.username = args[1]
-    local f = io.open("data/players/" .. p.username .. ".yaml", "r")
-    if f == nil then
-      p:send("New account.")
-      p:passwordprompt()
-    else
-      local data = lyaml.load(f:read("*all"))
-      f:close()
-      p:ask("Password: ", function(args)
-        local password = args[1]
-        if data["password"] == password then
-          p:send("Success!")
-          p.password = password
-          p.mobs = data["mobs"]
-          p:mobprompt()
-        else
-          p:send("Login failure.")
-          p.client:close()
-        end
-      end)
-    end
-  end)
+  p:loginprompt()
 
   return p
 end
