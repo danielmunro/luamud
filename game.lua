@@ -7,6 +7,7 @@ local area = require "area"
 local player = require "player"
 local affect = require "affect"
 local f = require "functional"
+local login = require "login"
 
 local DEFAULT_HEAL_RATE = 0.2
 local DEFAULT_MANA_RATE = 0.3
@@ -47,6 +48,7 @@ function game:checknewclient()
 
     local p = player:new(client)
     table.insert(self.players, p)
+    login:new(p):prompt()
 
   end
 

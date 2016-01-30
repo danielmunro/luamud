@@ -1,7 +1,6 @@
 local mob = require "mob"
 local lyaml = require "lyaml"
 local item = require "item"
-local login = require "login"
 
 local player = {}
 local playermt = {}
@@ -65,8 +64,6 @@ function player:new(client)
 
   setmetatable(p, playermt)
   playermt.__index = playermt
-
-  login:new(p):prompt()
 
   return p
 end
