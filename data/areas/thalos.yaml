@@ -1,128 +1,128 @@
 ---
+items: {}
+itemresets: {}
 id: thalos
-filename: ''
+name: New Thalos
+mobs: {}
+mobresets: {}
 rooms:
-  2-85df785ec20d6:
-    items: {}
-    description: A new room has popped into existence from the void. It is up to you
-      to customize it.
-    area: thalos
-    id: 2-85df785ec20d6
-    directions:
-      east: 1-bfed158b7c0c4
-      south: 0-9c6e04efd29c4
-      north: 3-9ac51720837e2
-    name: A new room
-  0-8af0fe88062c0:
-    items: {}
-    description: A new room has popped into existence from the void. It is up to you
-      to customize it.
-    area: thalos
-    id: 0-8af0fe88062c0
-    directions:
-      west: 4-8cf2de4a5b751
-      east: 4-8cf2de4a5b751
-      south: 4-8cf2de4a5b751
-      north: 4-8cf2de4a5b751
-    name: A new room
   6-ae70bdc057f19:
     items: {}
-    description: A new room has popped into existence from the void. It is up to you
-      to customize it.
-    area: thalos
     id: 6-ae70bdc057f19
-    directions:
-      west: 3-9ac51720837e2
-      south: 1-bfed158b7c0c4
     name: A new room
-  1-bfed158b7c0c4:
-    items: {}
+    area: thalos
     description: A new room has popped into existence from the void. It is up to you
       to customize it.
-    area: thalos
-    id: 1-bfed158b7c0c4
     directions:
-      west: 2-85df785ec20d6
-      east: 4-8cf2de4a5b751
-      south: 3-a26f42eaeac23
-      north: 6-ae70bdc057f19
-    name: Proxy home
+      south: 1-bfed158b7c0c4
+      west: 3-9ac51720837e2
+  2-85df785ec20d6:
+    items: {}
+    id: 2-85df785ec20d6
+    name: A new room
+    area: thalos
+    description: A new room has popped into existence from the void. It is up to you
+      to customize it.
+    directions:
+      south: 0-9c6e04efd29c4
+      east: 1-bfed158b7c0c4
+      north: 3-9ac51720837e2
   3-a2e80cfaafa79:
     items: {}
+    id: 3-a2e80cfaafa79
+    name: A new room
+    area: thalos
     description: A new room has popped into existence from the void. It is up to you
       to customize it.
-    area: thalos
-    id: 3-a2e80cfaafa79
     directions:
-      north: 4-8cf2de4a5b751
       east: 2c7830aa-e68d-4008-a061-6a9ed81a6bec
+      north: 4-8cf2de4a5b751
+  a-a441daafea73d:
+    items: {}
+    id: a-a441daafea73d
     name: A new room
+    area: thalos
+    description: A new room has popped into existence from the void. It is up to you
+      to customize it.
+    directions:
+      south: 2c7830aa-e68d-4008-a061-6a9ed81a6bec
+      west: 4-8cf2de4a5b751
+  0-9c6e04efd29c4:
+    items: {}
+    id: 0-9c6e04efd29c4
+    name: A new room
+    area: thalos
+    description: A new room has popped into existence from the void. It is up to you
+      to customize it.
+    directions:
+      east: 3-a26f42eaeac23
+      north: 2-85df785ec20d6
+  2c7830aa-e68d-4008-a061-6a9ed81a6bec:
+    items: {}
+    id: 2c7830aa-e68d-4008-a061-6a9ed81a6bec
+    name: A new room
+    area: thalos
+    description: A new room has popped into existence from the void. It is up to you
+      to customize it.
+    directions:
+      west: 3-a2e80cfaafa79
+      east: start
+      north: a-a441daafea73d
+  4-8cf2de4a5b751:
+    items: {}
+    id: 4-8cf2de4a5b751
+    name: Gate Home
+    area: thalos
+    description: A new room has popped into existence from the void. It is up to you
+      to customize it.
+    directions:
+      west: 1-bfed158b7c0c4
+      east: 0-8af0fe88062c0
+      north: 0-8af0fe88062c0
+  3-a26f42eaeac23:
+    items: {}
+    id: 3-a26f42eaeac23
+    name: A new room
+    area: thalos
+    description: A new room has popped into existence from the void. It is up to you
+      to customize it.
+    directions:
+      north: 1-bfed158b7c0c4
+      west: 0-9c6e04efd29c4
+  0-8af0fe88062c0:
+    items: {}
+    id: 0-8af0fe88062c0
+    name: A new room
+    area: thalos
+    description: A new room has popped into existence from the void. It is up to you
+      to customize it.
+    directions:
+      south: 4-8cf2de4a5b751
+      west: 4-8cf2de4a5b751
+      east: 4-8cf2de4a5b751
+      north: 4-8cf2de4a5b751
   3-9ac51720837e2:
     items: {}
+    id: 3-9ac51720837e2
+    name: A new room
+    area: thalos
     description: A new room has popped into existence from the void. It is up to you
       to customize it.
-    area: thalos
-    id: 3-9ac51720837e2
     directions:
       south: 2-85df785ec20d6
       east: 6-ae70bdc057f19
-    name: A new room
-  2c7830aa-e68d-4008-a061-6a9ed81a6bec:
+  1-bfed158b7c0c4:
     items: {}
+    id: 1-bfed158b7c0c4
+    name: Proxy home
+    area: thalos
     description: A new room has popped into existence from the void. It is up to you
       to customize it.
-    area: thalos
-    id: 2c7830aa-e68d-4008-a061-6a9ed81a6bec
     directions:
-      east: start
-      west: 3-a2e80cfaafa79
-      north: a-a441daafea73d
-    name: A new room
-  0-9c6e04efd29c4:
-    items: {}
-    description: A new room has popped into existence from the void. It is up to you
-      to customize it.
-    area: thalos
-    id: 0-9c6e04efd29c4
-    directions:
-      north: 2-85df785ec20d6
-      east: 3-a26f42eaeac23
-    name: A new room
-  3-a26f42eaeac23:
-    items: {}
-    description: A new room has popped into existence from the void. It is up to you
-      to customize it.
-    area: thalos
-    id: 3-a26f42eaeac23
-    directions:
-      west: 0-9c6e04efd29c4
-      north: 1-bfed158b7c0c4
-    name: A new room
-  4-8cf2de4a5b751:
-    items: {}
-    description: A new room has popped into existence from the void. It is up to you
-      to customize it.
-    area: thalos
-    id: 4-8cf2de4a5b751
-    directions:
-      east: 0-8af0fe88062c0
-      west: 1-bfed158b7c0c4
-      north: 0-8af0fe88062c0
-    name: Gate Home
-  a-a441daafea73d:
-    items: {}
-    description: A new room has popped into existence from the void. It is up to you
-      to customize it.
-    area: thalos
-    id: a-a441daafea73d
-    directions:
-      west: 4-8cf2de4a5b751
-      south: 2c7830aa-e68d-4008-a061-6a9ed81a6bec
-    name: A new room
-items: {}
-itemresets: {}
-mobs: {}
-mobresets: {}
+      south: 3-a26f42eaeac23
+      west: 2-85df785ec20d6
+      east: 4-8cf2de4a5b751
+      north: 6-ae70bdc057f19
 credits: ''
-name: New Thalos
+filename: ''
 ...

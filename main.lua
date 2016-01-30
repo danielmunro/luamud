@@ -2,41 +2,14 @@ local game = require "game"
 local command = require "command"
 local room = require "room"
 local location = require "location"
-local random = math.random
+local f = require "functional"
 
 math.randomseed(os.time())
-
-function map(array, func)
-  local newarray = {}
-  for i, v in pairs(array) do
-    newarray[i] = func(v, i)
-  end
-
-  return newarray
-end
-
-function each(array, func)
-  for i, v in pairs(array) do
-    func(v, i)
-  end
-end
-
-function first(array, func)
-  if not func then
-    func = function(v, i) return v end
-  end
-
-  for i, v in pairs(array) do
-    local r = func(v, i)
-
-    if r then return r end
-  end
-end
 
 function uuid()
     local template ='xxxyxxxyxxxyxxxyxxxyxxxyxxxyxxxy'
     return string.gsub(template, '[xy]', function (c)
-        local v = (c == 'x') and random(0, 0xf) or random(8, 0xb)
+        local v = (c == 'x') and math.random(0, 0xf) or math.random(8, 0xb)
         return string.format('%x', v)
     end)
 end
@@ -50,7 +23,7 @@ local function split(input)
 end
 
 function match(key, input)
-  return first(split(key), function(k)
+  return f.first(split(key), function(k)
     return string.find(k, input) == 1
   end)
 end
@@ -60,28 +33,28 @@ local function findcommand(input)
 
   if not input then return nil end
 
-  each(command, function(c, i)
+  f.each(command, function(c, i)
     if string.find(i, input) == 1 then match[i] = c end
   end)
 
-  local p = first(command.priority, function(p, i)
+  local p = f.first(command.priority, function(p, i)
     if string.find(i, input) == 1 then return match[p] end
   end)
 
   if p then return p end
 
-  return first(match)
+  return f.first(match)
 end
 
 function broadcast(message)
-  each(game.players, function(p) p:send(message) end)
+  f.each(game.players, function(p) p:send(message) end)
 end
 
 function broadcastroom(playersender, message)
 
   local senderlocation = location.mobs[playersender.mob.id]
 
-  each(game.players, function(p)
+  f.each(game.players, function(p)
     if senderlocation == location.mobs[p.mob.id] and p ~= playersender then
       p:send(message)
     end
@@ -95,7 +68,7 @@ while 1 do
 
     game:loop()
 
-    each(game.players, function(p, i)
+    f.each(game.players, function(p, i)
       local input, err = p.client:receive()
 
       if err == "closed" then

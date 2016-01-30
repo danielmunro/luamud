@@ -3,10 +3,14 @@ local mob = require "mob"
 local location = require "location"
 local area = require "area"
 local item = require "item"
+local f = require "functional"
+local attributes = require "attributes"
+local affect = require "affect"
 
 local command = {
   priority = {
-    s = "south"
+    s = "south",
+    a = "affects"
   }
 }
 
@@ -33,39 +37,21 @@ local function move(player, direction)
 end
 
 local function findmob(roomid, input)
-  return first(location.rooms[roomid], function(mobid)
+  return f.first(location.rooms[roomid], function(mobid)
     local m = mob.list[mobid]
-    for word in m.name:gmatch("%w+") do
-      if word:sub(1, input:len()) == input then
-        return m
-      end
-    end
+    if match(m.name, input) then return m end
   end)
 end
 
 local function finditem(invid, input)
-  if item.inv[invid] then
-    return first(item.inv[invid], function(i)
-      for word in i.name:gmatch("%w+") do
-        if word:sub(1, input:len()) == input then
-          return i
-        end
-      end
-    end)
-  end
-end
-
-function command.help(player, args)
-  local topic = args[2]
-  if topic == "create" then
-    player:send("'Create' is used to bring new objects into the game world.\n\nFor rooms, the syntax is: 'create room <direction>'")
-  else
-    player:send("Use the help command to learn more about the game.")
-  end
+  return f.first(item.inv[invid], function(i)
+    if match(i.name, input) then return i end
+  end)
 end
 
 function command.quit(player)
   location:removemob(player.mob.id, location.mobs[player.mob.id])
+  player:save()
   player.client:close()
 end
 
@@ -77,18 +63,22 @@ function command.look(player, args)
   local roomid = location.mobs[player.mob.id]
   local r = room.list[roomid]
 
+  -- looking at something
   if args and args[2] then
 
+    -- is the player looking at a mob?
     local m = findmob(roomid, args[2])
 
     if m then
       local description = m.description or ""
       player:send(description .. m.name .. " " .. mob:conditionstr(m) .. ".")
+
       return
     end
 
     if handled then return end
 
+    -- what about an item?
     local i = finditem(roomid, args[2])
 
     if not i then
@@ -100,37 +90,37 @@ function command.look(player, args)
       return
     end
 
+    -- item was not found
     player:send("You do not see that.")
+
     return
   end
 
-  local message = r.name .. "\n" .. r.description .. "\n\n" .. "Exits ["
+  local message = r.name .. "\n" .. r.description .. "\n\n" ..
 
   -- directions
-  each(r.directions, function(roomid, dir)
-    message = message .. string.sub(dir, 1, 1)
-  end)
-
-  message = message .. "]\n"
+   f.reduce("Exits [", r.directions, function(message, roomid, dir)
+    return message .. dir:sub(1, 1)
+  end) .. "]\n" ..
 
   -- mobs
-  each(location.rooms[roomid], function(mobid)
+  f.reduce("", location.rooms[roomid], function(message, mobid)
     if mobid ~= player.mob.id then
       local m = mob.list[mobid]
       if m.longdesc then
-        message = message .. m.longdesc .. "\n"
+        return message .. m.longdesc .. "\n"
       else
-        message = message .. m.name .. " is here.\n"
+        return message .. m.name .. " is here.\n"
       end
+    else
+      return message
     end
-  end)
+  end) ..
 
   -- items in room
-  if item.inv[roomid] then
-    each(item.inv[roomid], function(i)
-      message = message .. i.name .. " is on the ground.\n"
-    end)
-  end
+  f.reduce("", item.inv[roomid], function(message, i)
+    return message .. i.name .. " is on the ground.\n"
+  end)
 
   player:send(message:sub(1, -2))
 end
@@ -194,7 +184,7 @@ function command.train(player, args)
   local attrs = {str = "strength", int = "intelligence", wis = "wisdom", dex = "dexterity", con = "constitution", cha = "charisma"}
   local stats = {hp = 1, mana = 1, mv = 1}
 
-  local trainer = first(location.rooms[location.mobs[player.mob.id]], function(m)
+  local trainer = f.first(location.rooms[location.mobs[player.mob.id]], function(m)
     local listmob = mob.list[location.mobs[player.mob.id]]
     if listmob.trainer then return listmob end
   end)
@@ -254,7 +244,7 @@ function command.drop(player, args)
   for i, it in pairs(item.inv[player.mob.id]) do
     if match(it.name, itemname) then
       table.remove(item.inv[player.mob.id], i)
-      item:addinv(location.mobs[player.mob.id], it)
+      table.insert(item.inv[location.mobs[player.mob.id]], it)
       player:send("You drop " .. it.name .. ".")
       broadcastroom(player, player.mob.name .. " drops " .. it.name .. ".")
       return
@@ -269,7 +259,7 @@ function command.get(player, args)
   for i, it in pairs(item.inv[location.mobs[player.mob.id]]) do
     if match(it.name, itemname) then
       table.remove(item.inv[location.mobs[player.mob.id]], i)
-      item:addinv(player.mob.id, it)
+      table.insert(item.inv[player.mob.id], it)
       player:send("You pick up " .. it.name .. ".")
       broadcastroom(player, player.mob.name .. " picks up " .. it.name .. ".")
       return
@@ -279,30 +269,74 @@ function command.get(player, args)
   player:send("You don't see anything like that here.")
 end
 
+function command.affects(player)
+  player:send("Affecting you:\n" ..
+    f.reduce("", affect:getaffects(player.mob.id), function(message, a)
+      return message .. a.name .. ": " .. a.timeout .. "\n"
+    end):sub(1, -2))
+end
+
+function command.bless(player)
+  affect:new(player.mob.id, "bless", 2, "You feel less blessed.")
+  player:send("You feel blessed.")
+end
+
 function command.item(player, args)
   local action = args[2]
   if match("create", action) then
     local name = table.concat(args, " ", 3)
     local i = item:new(name)
-    item:addinv(player.mob.id, i)
+    table.insert(item.inv[player.mob.id], i)
     player:send("You create " .. name .. " out of the void")
-  elseif match("info", action) then
-    local i = finditem(player.mob.id, args[3])
-    local attrstr = ""
-    each(i.attr, function(v, attr)
-      attrstr = attrstr .. "+" .. v .. " " .. attr .. " "
-    end)
-    player:send(i.id .. "\n" .. i.name .. "\n" .. "weight: " .. i.weight ..
-    ", material: " .. i.material .. "\n" .. attrstr)
   elseif match("material", action) then
     local i = finditem(player.mob.id, args[3])
     i.material = args[4]
   elseif match("weight", action) then
     local i = finditem(player.mob.id, args[3])
     i.weight = tonumber(args[4])
-  elseif match("attr", action) then
-    local i = finditem(player.mob.id, args[3])
-    i.attr[args[4]] = tonumber(args[5])
+  else
+
+    local selecteditem = finditem(player.mob.id, args[2])
+
+    if not selecteditem then
+      player:send("That item not found. Format is: item <item name> <attr1> <value1> <attr2> <value2> ...")
+      return
+    end
+    local attrupdate = {}
+    local i = 3
+
+    -- display information about the item
+    if not args[i] then
+      local i = finditem(player.mob.id, args[3])
+      local attrstr = ""
+      f.each(i.attr, function(v, attr)
+        attrstr = attrstr .. "+" .. v .. " " .. attr .. " "
+      end)
+      player:send(i.id .. "\n" .. i.name .. "\n" .. "weight: " .. i.weight ..
+      ", material: " .. i.material .. "\n" .. attrstr)
+      return
+    end
+
+    -- assign attributes to the item
+    while args[i] do
+      if not attributes.isattr(args[i]) then
+        player:send("That is not a valid attribute. Format is: item <item name> <attr1> <value1> <attr2> <value2> ...")
+        return
+      end
+      args[i+1] = tonumber(args[i+1])
+      if type(args[i+1]) ~= "number" then
+        player:send("Attribute value must be a number. Format is: item <item name> <attr1> <value1> <attr2> <value2> ...")
+        return
+      end
+      attrupdate[args[i]] = args[i+1]
+      i = i + 2
+    end
+
+    f.each(attrupdate, function(i, k)
+      selecteditem.attr[k] = i
+    end)
+
+    player:send("Item updated")
   end
 end
 
@@ -405,7 +439,7 @@ function command.gate(player, args)
       player:send("Gate created successfully!")
     end
   else
-    player:send("That is not a valid direction. Command is: proxy <direction>")
+    player:send("That is not a valid direction. Command is: gate <direction>")
   end
 end
 

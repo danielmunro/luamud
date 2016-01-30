@@ -1,58 +1,58 @@
 ---
+itemresets:
+  start:
+  - material: void
+    weight: 0
+    name: a wooden sword
+    id: c49a7b490b49caebac294eba0ddbe9ca
+rooms:
+  start:
+    items: {}
+    id: start
+    name: A new room
+    area: midgaard
+    description: A new room has popped into existence from the void. It is up to you
+      to customize it.
+    directions:
+      south: c7830aae-68d0-408a-8616-a9ed81a6bec4
+      west: 2c7830aa-e68d-4008-a061-6a9ed81a6bec
+  c7830aae-68d0-408a-8616-a9ed81a6bec4:
+    items: {}
+    id: c7830aae-68d0-408a-8616-a9ed81a6bec4
+    name: A new room
+    area: midgaard
+    description: A new room has popped into existence from the void. It is up to you
+      to customize it.
+    directions:
+      north: start
+credits: foo
+filename: ''
+name: Midgaard
+id: midgaard
 mobs:
   29a89f7bb5984119e9d8f53955d8c769:
-    act: {}
-    level: 1
-    id: 29a89f7bb5984119e9d8f53955d8c769
-    mv: 100
-    shortdesc: ''
-    attr:
-      hp: 20
-      mana: 100
-      mv: 100
-    desc: ''
-    mana: 100
-    race: critter
-    hp: 20
     position: standing
     trains: 1
+    practices: 5
+    id: 29a89f7bb5984119e9d8f53955d8c769
+    attr:
+      mv: 100
+      hp: 20
+      mana: 100
     xp:
       tolevel: 900
       tnl: 900
       total: 900
-    isnpc: true
-    practices: 5
+    level: 1
     name: a critter
-rooms:
-  start:
-    items: {}
-    description: A new room has popped into existence from the void. It is up to you
-      to customize it.
-    area: midgaard
-    id: start
-    directions:
-      west: 2c7830aa-e68d-4008-a061-6a9ed81a6bec
-      south: c7830aae-68d0-408a-8616-a9ed81a6bec4
-    name: A new room
-  c7830aae-68d0-408a-8616-a9ed81a6bec4:
-    items: {}
-    description: A new room has popped into existence from the void. It is up to you
-      to customize it.
-    area: midgaard
-    id: c7830aae-68d0-408a-8616-a9ed81a6bec4
-    directions:
-      north: start
-    name: A new room
-id: midgaard
+    act: {}
+    mv: 100
+    isnpc: true
+    mana: 100
+    shortdesc: ''
+    race: critter
+    hp: 20
+    desc: ''
 mobresets:
   29a89f7bb5984119e9d8f53955d8c769: start
-itemresets:
-  start:
-  - material: void
-    name: a wooden sword
-    id: d9fb27fb6fdb2648e468e48b04fbd2e9
-    weight: 0
-filename: ''
-credits: foo
-name: Midgaard
 ...

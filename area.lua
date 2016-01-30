@@ -31,10 +31,12 @@ function area:load()
         os.exit()
       end
       room.list[r.id] = r
+      item.inv[r.id] = {}
     end
 
     for j, r in pairs(data.mobs) do
       mob.list[j] = r
+      item.inv[j] = {}
     end
 
     for mobid, roomid in pairs(data.mobresets) do
@@ -44,7 +46,7 @@ function area:load()
     for roomid, inv in pairs(data.itemresets) do
       for i, it in pairs(inv) do
         it.id = uuid()
-        item:addinv(roomid, it)
+        table.insert(item.inv[roomid], it)
       end
     end
 

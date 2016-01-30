@@ -7,14 +7,6 @@ local item = {
   inv = {}
 }
 
-function item:addinv(invid, item)
-  if not self.inv[invid] then
-    self.inv[invid] = {}
-  end
-
-  table.insert(self.inv[invid], item)
-end
-
 function item:new(item)
   local newitem = {
     name = name,

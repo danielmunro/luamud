@@ -2,6 +2,8 @@ local attributes = require "attributes"
 local race = require "race"
 local skill = require "skill"
 local class = require "class"
+local item = require "item"
+
 local mob = {
   list = {}
 }
@@ -136,6 +138,7 @@ function mob:new(name, racetype, classtype)
   }
 
   self.list[m.id] = m
+  item.inv[m.id] = {}
 
   return m
 end

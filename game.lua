@@ -5,6 +5,8 @@ local command = require "command"
 local location = require "location"
 local area = require "area"
 local player = require "player"
+local affect = require "affect"
+local f = require "functional"
 
 local DEFAULT_HEAL_RATE = 0.2
 local DEFAULT_MANA_RATE = 0.3
@@ -66,7 +68,7 @@ function game:loop()
     self.nexttick = nexttick()
 
     -- regen
-    each(mob.list, function(m)
+    f.each(mob.list, function(m)
       local r = room.list[location.mobs[m.id]]
       regen(m, "hp", r.healrate or DEFAULT_HEAL_RATE)
       regen(m, "mana", r.manarate or DEFAULT_MANA_RATE)
@@ -74,18 +76,18 @@ function game:loop()
     end)
 
     -- save players, prompt them
-    each(self.players, function(p)
+    f.each(self.players, function(p)
+      f.each(affect:getaffects(p.mob.id), function(a)
+        if a.timeout == 0 and a.weardown then p:send(a.weardown) end
+      end)
       p:save()
       p:prompt()
     end)
 
-    -- save all areas -- boinga
-    each(area.list, function(a)
-      area:save(a)
-    end)
+    -- tick down affects
+    affect:tick()
 
-    print("tick --> " .. #room.list .. " rooms, " .. #mob.list .. " mobs, " .. #self.players .. " players")
-    print("next tick in " .. (self.nexttick - os.time()) .. " seconds")
+    print("tick. " .. #self.players .. " players online, next tick in " .. (self.nexttick - os.time()) .. " seconds")
   end
 end
 

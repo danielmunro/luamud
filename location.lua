@@ -1,3 +1,5 @@
+local f = require "functional"
+
 local location = {
   mobs = {},
   rooms = {}
@@ -15,7 +17,7 @@ end
 
 function location:removemob(mobid, roomid)
   if self.rooms[roomid] then
-    first(self.rooms[roomid], function(m)
+    f.first(self.rooms[roomid], function(m)
       if m == mobid then
         table.remove(self.rooms[roomid], i)
         return true
